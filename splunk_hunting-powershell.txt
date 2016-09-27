@@ -1,0 +1,94 @@
+--------------------------------------------------------------------------------
+PowerShell-based Splunk Hunting Queries
+- Find the bad, m'kay?!?
+
+Author: @rj_chap
+
+NOTE1: The queries in this document focus on Event Code 4688. If you have proper
+PowerShell logging enabled, please make sure to modify these queries to capture
+events from Event Codes 4103 and 4104 (with focus on the Payload and 
+ScriptBlockText fields, respectively).
+
+NOTE2: We focus on our Windows Logging Service (WLS) index. However, you might
+receive your Windows Event logs via raw log file ingestion, Sysmon, Snare, etc.
+Simply change the index and you're golden.
+--------------------------------------------------------------------------------
+
+--------------------
+
+Hunting - PowerShell Download/Copy
+
+index=wls* EventID=4688 (BaseFileName=powershell.exe OR BaseFileName=powershell_ise.exe OR BaseFileName=cmd.exe)
+(CommandLine="*Copy-Item*" OR 
+ CommandLine="*.CopyHere*" OR 
+ CommandLine="*New-Object*" OR 
+ CommandLine="*WebClient*" OR
+ CommandLine="*DownloadFile*" OR 
+ CommandLine="*Invoke-WebRequest*")
+| table _time, Computer, SubjectDomainName, SubjectUserName, BaseFileName, CommandLine, CompanyName, CreatorProcessName, NewProcessName, FileDescription, FileVersion, MD5
+
+--------------------
+
+Hunting - PowerShell Enumeration Methods
+Various PS methods that can be used for host enumeration by a malicious actor
+
+index=wls* EventID=4688 (BaseFileName=powershell.exe OR BaseFileName=powershell_ise.exe OR BaseFileName=cmd.exe)
+(CommandLine="*get-filehash*" OR 
+ CommandLine="*get-process*" OR 
+ CommandLine="*get-hotfix*" OR 
+ CommandLine="*cd hk*" OR 
+ CommandLine="*get-itemproperty hk*" OR 
+ CommandLine="*netfirewallrule*")
+NOT (CommandLine="*$_.DisplayName -eq 'Windows Deployment Tools') -and ($_.Version -ge*")
+| table _time, Computer, SubjectDomainName, SubjectUserName, BaseFileName, CommandLine, CompanyName, CreatorProcessName, NewProcessName, FileDescription, FileVersion, MD5
+
+--------------------
+
+Hunting - PowerShell Injection Methods
+Looks for common PS methods used for injection attacks
+
+index=wls* EventID=4688 (BaseFileName=powershell.exe OR BaseFileName=powershell_ise.exe OR BaseFileName=cmd.exe)
+(CommandLine="*getassemblies*" OR
+ CommandLine="*assemblyname*" OR
+ CommandLine="*system.dll*" OR
+ CommandLine="*dllimport*" OR
+ CommandLine="*GetProcAddress*" OR
+ CommandLine="*GetModuleHandle*" OR
+ CommandLine="*InteropServices.HandleRef*")
+| table _time, Computer, SubjectDomainName, SubjectUserName, BaseFileName, CommandLine, CompanyName, CreatorProcessName, NewProcessName, FileDescription, FileVersion, MD5
+
+--------------------
+
+Hunting - PowerShell via schtasks
+PowerShell scripts can be leveraged via schtasks using a syntax such as: C:\Windows\system32\schtasks.exe  /create /TN [bs name here] /TR "powershell.exe ...[blah]...
+
+index=wls* EventID=4688 BaseFileName="schtasks.exe"
+CommandLine="*powershell*"
+| table _time, Computer, SubjectDomainName, SubjectUserName, BaseFileName, CommandLine, CompanyName, CreatorProcessName, NewProcessName, FileDescription, FileVersion, MD5
+
+--------------------
+
+Hunting - PowerSploit Module Names
+Checks for PowerSploit module names being loaded
+
+index=wls* EventID=4688 (BaseFileName=powershell.exe OR BaseFileName=cmd.exe)
+(CommandLine="*powersploit*" OR CommandLine="*Invoke-DllInjection*" OR CommandLine="*Invoke-ReflectivePEInjection*" OR CommandLine="*Invoke-Shellcode*" OR CommandLine="*Invoke-WmiCommand*" OR CommandLine="*Out-EncodedCommand*" OR CommandLine="*Out-CompressedDll*" OR CommandLine="*Out-EncryptedScript*" OR CommandLine="*Remove-Comments*" OR CommandLine="*New-UserPersistenceOption*" OR CommandLine="*New-ElevatedPersistenceOption*" OR CommandLine="*Add-Persistence*" OR CommandLine="*Install-SSP*" OR CommandLine="*Get-SecurityPackages*" OR CommandLine="*Find-AVSignature*" OR CommandLine="*Invoke-TokenManipulation*" OR CommandLine="*Invoke-CredentialInjection*" OR CommandLine="*Invoke-NinjaCopy*" OR CommandLine="*Invoke-Mimikatz*" OR CommandLine="*Get-Keystrokes*" OR CommandLine="*Get-GPPPassword*" OR CommandLine="*Get-TimedScreenshot*" OR CommandLine="*New-VolumeShadowCopy*" OR CommandLine="*Get-VolumeShadowCopy*" OR CommandLine="*Mount-VolumeShadowCopy*" OR CommandLine="*Remove-VolumeShadowCopy*" OR CommandLine="*Get-VaultCredential*" OR CommandLine="*Out-Minidump*" OR CommandLine="*Set-MasterBootRecord*" OR CommandLine="*Set-CriticalProcess*" OR CommandLine="*PowerUp*" OR CommandLine="*Invoke-Portscan*" OR CommandLine="*Get-HttpStatus*" OR CommandLine="*Invoke-ReverseDnsLookup*" OR CommandLine="*PowerView*")
+| table _time, Computer, SubjectDomainName, SubjectUserName, BaseFileName, CommandLine, CompanyName, CreatorProcessName, NewProcessName, FileDescription, FileVersion, MD5
+
+--------------------
+
+Hunting - Remote PS Commands
+Looks for psremoting, pssession, invoke-command, and wsman use
+
+index=wls* EventID=4688 (BaseFileName=powershell.exe OR BaseFileName=cmd.exe)
+(CommandLine="*psremoting*" OR CommandLine="*pssession*" OR CommandLine="*invoke-command*" OR CommandLine="*wsman*")
+| table _time, Computer, SubjectDomainName, SubjectUserName, BaseFileName, CommandLine, CompanyName, CreatorProcessName, NewProcessName, FileDescription, FileVersion, MD5
+
+--------------------
+
+Hunting - PowerShell Get-Service Method
+Trying to catch a malicious user enumerating a service or services via PS
+
+index=wls* EventID=4688 (BaseFileName=powershell.exe OR BaseFileName=powershell_ise.exe OR BaseFileName=cmd.exe)
+CommandLine="*get-service*"
+| table _time, Computer, SubjectDomainName, SubjectUserName, BaseFileName, CommandLine, CompanyName, CreatorProcessName, NewProcessName, FileDescription, FileVersion, MD5
