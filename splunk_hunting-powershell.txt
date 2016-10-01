@@ -4,20 +4,33 @@ PowerShell-based Splunk Hunting Queries
 
 Author: @rj_chap
 
-NOTE1: The queries in this document focus on Event Code 4688. If you have proper
-PowerShell logging enabled, please make sure to modify these queries to capture
-events from Event Codes 4103 and 4104 (with focus on the Payload and 
-ScriptBlockText fields, respectively).
+Depending on your environment's reliance on PowerShell, be it through 
+application dependence and/oror IT personell maintenance/usage, these queries
+may prove noisy initially.  The goal is to trim the fat by establishing a 
+baseline of NOT statements.  Once tuned, these bad boys should prove quite 
+useful for identifying PowerShell-based silliness.  Good luck!!
 
-NOTE2: We focus on our Windows Logging Service (WLS) index. However, you might
-receive your Windows Event logs via raw log file ingestion, Sysmon, Snare, etc.
-Simply change the index and you're golden.
+NOTE: Our focus here is on Windows Event Logs.  We receive ours via the Windows 
+Logging Service (WLS) index.  However, you might receive your Windows logs via 
+raw log file ingestion (such as via the SplunkUF), Sysmon, Snare, etc.
+Simply adjust the index and/or add your sourcetype(s).
+
+NOTE 2: You get to make your own tables for 4103 and 4104 events. I basically
+want to make sure that you see *all* the good stuff in those indices rather 
+than force my idea of a good table on you. Check 'em out!
+
 --------------------------------------------------------------------------------
 
 --------------------
 
 Hunting - PowerShell Download/Copy
+While the copy and new-object items alone may not prove maliciousness, you want
+to keep your eyes on these bad boys.  The WebClient, DownloadFile, and 
+Invoke-WebRequest suckers can quickly identify common attacker activity.
+For example, this query is *very* good at identifying Dridex downloaders.
 
+Event Code 4688 - Process Execution
+{{{
 index=wls* EventID=4688 (BaseFileName=powershell.exe OR BaseFileName=powershell_ise.exe OR BaseFileName=cmd.exe)
 (CommandLine="*Copy-Item*" OR 
  CommandLine="*.CopyHere*" OR 
@@ -26,12 +39,36 @@ index=wls* EventID=4688 (BaseFileName=powershell.exe OR BaseFileName=powershell_
  CommandLine="*DownloadFile*" OR 
  CommandLine="*Invoke-WebRequest*")
 | table _time, Computer, SubjectDomainName, SubjectUserName, BaseFileName, CommandLine, CompanyName, CreatorProcessName, NewProcessName, FileDescription, FileVersion, MD5
+}}}
+
+Event Codes 4103 & 4104 - Module Logging & Script Block Logging
+{{{
+index=wls* ProviderName="Microsoft-Windows-PowerShell"
+( EventID=4103
+ (Payload="*Copy-Item*" OR 
+  Payload="*.CopyHere*" OR 
+  Payload="*New-Object*" OR 
+  Payload="*WebClient*" OR
+  Payload="*DownloadFile*" OR 
+  Payload="*Invoke-WebRequest*")
+) OR 
+( EventID=4104
+ (ScriptBlockText="*Copy-Item*" OR 
+  ScriptBlockText="*.CopyHere*" OR 
+  ScriptBlockText="*New-Object*" OR 
+  ScriptBlockText="*WebClient*" OR
+  ScriptBlockText="*DownloadFile*" OR 
+  ScriptBlockText="*Invoke-WebRequest*")
+)
+}}}
 
 --------------------
 
 Hunting - PowerShell Enumeration Methods
 Various PS methods that can be used for host enumeration by a malicious actor
 
+Event Code 4688 - Process Execution
+{{{
 index=wls* EventID=4688 (BaseFileName=powershell.exe OR BaseFileName=powershell_ise.exe OR BaseFileName=cmd.exe)
 (CommandLine="*get-filehash*" OR 
  CommandLine="*get-process*" OR 
@@ -39,14 +76,37 @@ index=wls* EventID=4688 (BaseFileName=powershell.exe OR BaseFileName=powershell_
  CommandLine="*cd hk*" OR 
  CommandLine="*get-itemproperty hk*" OR 
  CommandLine="*netfirewallrule*")
-NOT (CommandLine="*$_.DisplayName -eq 'Windows Deployment Tools') -and ($_.Version -ge*")
 | table _time, Computer, SubjectDomainName, SubjectUserName, BaseFileName, CommandLine, CompanyName, CreatorProcessName, NewProcessName, FileDescription, FileVersion, MD5
+}}}
+
+Event Codes 4103 & 4104 - Module Logging & Script Block Logging
+{{{
+index=wls* ProviderName="Microsoft-Windows-PowerShell"
+( EventID=4103
+ (Payload="*get-filehash*" OR 
+  Payload="*get-process*" OR 
+  Payload="*get-hotfix*" OR 
+  Payload="*cd hk*" OR
+  Payload="*get-itemproperty hk*" OR 
+  Payload="*netfirewallrule*")
+) OR 
+( EventID=4104
+ (ScriptBlockText="*get-filehash*" OR 
+  ScriptBlockText="*get-process*" OR 
+  ScriptBlockText="*get-hotfix*" OR 
+  ScriptBlockText="*cd hk*" OR
+  ScriptBlockText="*get-itemproperty hk*" OR 
+  ScriptBlockText="*netfirewallrule*")
+)
+}}}
 
 --------------------
 
 Hunting - PowerShell Injection Methods
 Looks for common PS methods used for injection attacks
 
+Event Code 4688 - Process Execution
+{{{
 index=wls* EventID=4688 (BaseFileName=powershell.exe OR BaseFileName=powershell_ise.exe OR BaseFileName=cmd.exe)
 (CommandLine="*getassemblies*" OR
  CommandLine="*assemblyname*" OR
@@ -56,39 +116,117 @@ index=wls* EventID=4688 (BaseFileName=powershell.exe OR BaseFileName=powershell_
  CommandLine="*GetModuleHandle*" OR
  CommandLine="*InteropServices.HandleRef*")
 | table _time, Computer, SubjectDomainName, SubjectUserName, BaseFileName, CommandLine, CompanyName, CreatorProcessName, NewProcessName, FileDescription, FileVersion, MD5
+}}}
+
+Event Codes 4103 & 4104 - Module Logging & Script Block Logging
+{{{
+index=wls* ProviderName="Microsoft-Windows-PowerShell"
+( EventID=4103
+ (Payload="*getassemblies*" OR 
+  Payload="*assemblyname*" OR 
+  Payload="*system.dll*" OR 
+  Payload="*dllimport*" OR
+  Payload="*GetProcAddress*" OR 
+  Payload="*GetModuleHandle*" OR 
+  Payload="*InteropServices.HandleRef*")
+) OR 
+( EventID=4104
+ (ScriptBlockText="*getassemblies*" OR 
+  ScriptBlockText="*assemblyname*" OR 
+  ScriptBlockText="*system.dll*" OR 
+  ScriptBlockText="*dllimport*" OR
+  ScriptBlockText="*GetProcAddress*" OR 
+  ScriptBlockText="*GetModuleHandle*" OR 
+  ScriptBlockText="*InteropServices.HandleRef*")
+)
+}}}
 
 --------------------
 
 Hunting - PowerShell via schtasks
-PowerShell scripts can be leveraged via schtasks using a syntax such as: C:\Windows\system32\schtasks.exe  /create /TN [bs name here] /TR "powershell.exe ...[blah]...
+PowerShell scripts can be leveraged via schtasks using a syntax such as: `C:\Windows\system32\schtasks.exe  /create /TN [bs name here] /TR "powershell.exe ...[blah]...`
 
+Event Code 4688 - Process Execution
+{{{
 index=wls* EventID=4688 BaseFileName="schtasks.exe"
 CommandLine="*powershell*"
 | table _time, Computer, SubjectDomainName, SubjectUserName, BaseFileName, CommandLine, CompanyName, CreatorProcessName, NewProcessName, FileDescription, FileVersion, MD5
+}}}
 
 --------------------
 
 Hunting - PowerSploit Module Names
-Checks for PowerSploit module names being loaded
+Checks for PowerSploit module names being loaded.  You may want to do the same
+for Nishang, PowerShell Empire, etc.
 
+Event Code 4688 - Process Execution
+{{{
 index=wls* EventID=4688 (BaseFileName=powershell.exe OR BaseFileName=cmd.exe)
 (CommandLine="*powersploit*" OR CommandLine="*Invoke-DllInjection*" OR CommandLine="*Invoke-ReflectivePEInjection*" OR CommandLine="*Invoke-Shellcode*" OR CommandLine="*Invoke-WmiCommand*" OR CommandLine="*Out-EncodedCommand*" OR CommandLine="*Out-CompressedDll*" OR CommandLine="*Out-EncryptedScript*" OR CommandLine="*Remove-Comments*" OR CommandLine="*New-UserPersistenceOption*" OR CommandLine="*New-ElevatedPersistenceOption*" OR CommandLine="*Add-Persistence*" OR CommandLine="*Install-SSP*" OR CommandLine="*Get-SecurityPackages*" OR CommandLine="*Find-AVSignature*" OR CommandLine="*Invoke-TokenManipulation*" OR CommandLine="*Invoke-CredentialInjection*" OR CommandLine="*Invoke-NinjaCopy*" OR CommandLine="*Invoke-Mimikatz*" OR CommandLine="*Get-Keystrokes*" OR CommandLine="*Get-GPPPassword*" OR CommandLine="*Get-TimedScreenshot*" OR CommandLine="*New-VolumeShadowCopy*" OR CommandLine="*Get-VolumeShadowCopy*" OR CommandLine="*Mount-VolumeShadowCopy*" OR CommandLine="*Remove-VolumeShadowCopy*" OR CommandLine="*Get-VaultCredential*" OR CommandLine="*Out-Minidump*" OR CommandLine="*Set-MasterBootRecord*" OR CommandLine="*Set-CriticalProcess*" OR CommandLine="*PowerUp*" OR CommandLine="*Invoke-Portscan*" OR CommandLine="*Get-HttpStatus*" OR CommandLine="*Invoke-ReverseDnsLookup*" OR CommandLine="*PowerView*")
 | table _time, Computer, SubjectDomainName, SubjectUserName, BaseFileName, CommandLine, CompanyName, CreatorProcessName, NewProcessName, FileDescription, FileVersion, MD5
+}}}
+
+Event Codes 4103 - Module Logging
+{{{
+index=wls* ProviderName="Microsoft-Windows-PowerShell" EventID=4103
+(Payload="*powersploit*" OR Payload="*Invoke-DllInjection*" OR Payload="*Invoke-ReflectivePEInjection*" OR Payload="*Invoke-Shellcode*" OR Payload="*Invoke-WmiCommand*" OR Payload="*Out-EncodedCommand*" OR Payload="*Out-CompressedDll*" OR Payload="*Out-EncryptedScript*" OR Payload="*Remove-Comments*" OR Payload="*New-UserPersistenceOption*" OR Payload="*New-ElevatedPersistenceOption*" OR Payload="*Add-Persistence*" OR Payload="*Install-SSP*" OR Payload="*Get-SecurityPackages*" OR Payload="*Find-AVSignature*" OR Payload="*Invoke-TokenManipulation*" OR Payload="*Invoke-CredentialInjection*" OR Payload="*Invoke-NinjaCopy*" OR Payload="*Invoke-Mimikatz*" OR Payload="*Get-Keystrokes*" OR Payload="*Get-GPPPassword*" OR Payload="*Get-TimedScreenshot*" OR Payload="*New-VolumeShadowCopy*" OR Payload="*Get-VolumeShadowCopy*" OR Payload="*Mount-VolumeShadowCopy*" OR Payload="*Remove-VolumeShadowCopy*" OR Payload="*Get-VaultCredential*" OR Payload="*Out-Minidump*" OR Payload="*Set-MasterBootRecord*" OR Payload="*Set-CriticalProcess*" OR Payload="*PowerUp*" OR Payload="*Invoke-Portscan*" OR Payload="*Get-HttpStatus*" OR Payload="*Invoke-ReverseDnsLookup*" OR Payload="*PowerView*")
+}}}
+
+Event Codes 4104 - Script Block Logging
+{{{
+index=wls* ProviderName="Microsoft-Windows-PowerShell" EventID=4104
+(ScriptBlockText="*powersploit*" OR ScriptBlockText="*Invoke-DllInjection*" OR ScriptBlockText="*Invoke-ReflectivePEInjection*" OR ScriptBlockText="*Invoke-Shellcode*" OR ScriptBlockText="*Invoke-WmiCommand*" OR ScriptBlockText="*Out-EncodedCommand*" OR ScriptBlockText="*Out-CompressedDll*" OR ScriptBlockText="*Out-EncryptedScript*" OR ScriptBlockText="*Remove-Comments*" OR ScriptBlockText="*New-UserPersistenceOption*" OR ScriptBlockText="*New-ElevatedPersistenceOption*" OR ScriptBlockText="*Add-Persistence*" OR ScriptBlockText="*Install-SSP*" OR ScriptBlockText="*Get-SecurityPackages*" OR ScriptBlockText="*Find-AVSignature*" OR ScriptBlockText="*Invoke-TokenManipulation*" OR ScriptBlockText="*Invoke-CredentialInjection*" OR ScriptBlockText="*Invoke-NinjaCopy*" OR ScriptBlockText="*Invoke-Mimikatz*" OR ScriptBlockText="*Get-Keystrokes*" OR ScriptBlockText="*Get-GPPPassword*" OR ScriptBlockText="*Get-TimedScreenshot*" OR ScriptBlockText="*New-VolumeShadowCopy*" OR ScriptBlockText="*Get-VolumeShadowCopy*" OR ScriptBlockText="*Mount-VolumeShadowCopy*" OR ScriptBlockText="*Remove-VolumeShadowCopy*" OR ScriptBlockText="*Get-VaultCredential*" OR ScriptBlockText="*Out-Minidump*" OR ScriptBlockText="*Set-MasterBootRecord*" OR ScriptBlockText="*Set-CriticalProcess*" OR ScriptBlockText="*PowerUp*" OR ScriptBlockText="*Invoke-Portscan*" OR ScriptBlockText="*Get-HttpStatus*" OR ScriptBlockText="*Invoke-ReverseDnsLookup*" OR ScriptBlockText="*PowerView*")
+}}}
 
 --------------------
 
 Hunting - Remote PS Commands
-Looks for psremoting, pssession, invoke-command, and wsman use
+Looks for psremoting, pssession, invoke-command, and wsman use.  Some admins
+may leverage these suckers, so tune them out.  Any non-typical use of remote
+PS methodologies should be considered suspect.
 
+Event Code 4688 - Process Execution
+{{{
 index=wls* EventID=4688 (BaseFileName=powershell.exe OR BaseFileName=cmd.exe)
-(CommandLine="*psremoting*" OR CommandLine="*pssession*" OR CommandLine="*invoke-command*" OR CommandLine="*wsman*")
+(CommandLine="*psremoting*" OR 
+ CommandLine="*pssession*" OR 
+ CommandLine="*invoke-command*" OR 
+ CommandLine="*wsman*")
 | table _time, Computer, SubjectDomainName, SubjectUserName, BaseFileName, CommandLine, CompanyName, CreatorProcessName, NewProcessName, FileDescription, FileVersion, MD5
+}}}
+
+Event Codes 4103 & 4104 - Module Logging & Script Block Logging
+{{{
+index=wls* ProviderName="Microsoft-Windows-PowerShell"
+( EventID=4103
+ (Payload="*psremoting*" OR 
+  Payload="*pssession*" OR
+  Payload="*invoke-command*" OR 
+  Payload="*wsman*")
+) OR 
+( EventID=4104
+ (ScriptBlockText="*psremoting*" OR 
+  ScriptBlockText="*pssession*" OR
+  ScriptBlockText="*invoke-command*" OR 
+  ScriptBlockText="*wsman*")
+)
+}}}
 
 --------------------
 
 Hunting - PowerShell Get-Service Method
 Trying to catch a malicious user enumerating a service or services via PS
 
+Event Code 4688 - Process Execution
+{{{
 index=wls* EventID=4688 (BaseFileName=powershell.exe OR BaseFileName=powershell_ise.exe OR BaseFileName=cmd.exe)
 CommandLine="*get-service*"
 | table _time, Computer, SubjectDomainName, SubjectUserName, BaseFileName, CommandLine, CompanyName, CreatorProcessName, NewProcessName, FileDescription, FileVersion, MD5
+}}}
+
+Event Codes 4103 & 4104 - Module Logging & Script Block Logging
+{{{
+index=wls* ProviderName="Microsoft-Windows-PowerShell"
+(EventID=4103 Payload="*get-service*") OR
+(EventID=4104 ScriptBlockText="*get-service*")
+}}}
