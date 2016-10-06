@@ -38,7 +38,8 @@ index=wls* EventID=4688 (BaseFileName=powershell.exe OR BaseFileName=powershell_
  CommandLine="*WebClient*" OR
  CommandLine="*DownloadFile*" OR 
  CommandLine="*downloadstring*" OR 
- CommandLine="*Invoke-WebRequest*")
+ CommandLine="*Invoke-WebRequest*" OR
+ CommandLine="*restmethod*")
 | table _time, Computer, SubjectDomainName, SubjectUserName, BaseFileName, CommandLine, CompanyName, CreatorProcessName, NewProcessName, FileDescription, FileVersion, MD5
 }}}
 
