@@ -38,7 +38,7 @@ index=wls* EventID=4688 (BaseFileName=powershell.exe OR BaseFileName=powershell_
  CommandLine="*WebClient*" OR
  CommandLine="*DownloadFile*" OR 
  CommandLine="*downloadstring*" OR 
- CommandLine="*Invoke-WebRequest*" OR
+ CommandLine="*WebRequest*" OR
  CommandLine="*restmethod*")
 | table _time, Computer, SubjectDomainName, SubjectUserName, BaseFileName, CommandLine, CompanyName, CreatorProcessName, NewProcessName, FileDescription, FileVersion, MD5
 }}}
@@ -52,7 +52,8 @@ index=wls* ProviderName="Microsoft-Windows-PowerShell"
   Payload="*New-Object*" OR 
   Payload="*WebClient*" OR
   Payload="*DownloadFile*" OR 
-  Payload="*Invoke-WebRequest*")
+  Payload="*WebRequest*" OR
+  Payload="*restmethod*")
 ) OR 
 ( EventID=4104
  (ScriptBlockText="*Copy-Item*" OR 
@@ -60,7 +61,8 @@ index=wls* ProviderName="Microsoft-Windows-PowerShell"
   ScriptBlockText="*New-Object*" OR 
   ScriptBlockText="*WebClient*" OR
   ScriptBlockText="*DownloadFile*" OR 
-  ScriptBlockText="*Invoke-WebRequest*")
+  ScriptBlockText="*WebRequest*" OR
+  ScriptBlockText="*restmethod*")
 )
 }}}
 
