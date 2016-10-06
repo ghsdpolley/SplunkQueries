@@ -19,7 +19,8 @@ NOTE 2: You get to make your own tables for 4103 and 4104 events. I basically
 want to make sure that you see *all* the good stuff in those indices rather 
 than force my idea of a good table on you. Check 'em out!
 
-NOTE 3: We are taking advantage of bloom filtering, which is why we include the strings in the query prior to looking for them in the desired fields.
+NOTE 3: We are taking advantage of bloom filtering, which is why we include
+the strings in the query prior to looking for them in the desired fields.
 
 --------------------------------------------------------------------------------
 
