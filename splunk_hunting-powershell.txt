@@ -35,7 +35,7 @@ For example, this query is *very* good at identifying Dridex downloaders.
 Event Code 4688 - Process Execution
 {{{
 index=wls* EventID=4688 (BaseFileName=powershell.exe OR BaseFileName=powershell_ise.exe OR BaseFileName=cmd.exe)
-(Copy-Item OR .CopyHere OR New-Object OR WebClient ORDownloadFile OR downloadstring OR WebRequest OR restmethod)
+(Copy-Item OR .CopyHere OR New-Object OR WebClient OR DownloadFile OR downloadstring OR WebRequest OR restmethod)
 (CommandLine="*Copy-Item*" OR 
  CommandLine="*.CopyHere*" OR 
  CommandLine="*New-Object*" OR 
