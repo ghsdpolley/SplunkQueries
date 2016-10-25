@@ -50,7 +50,7 @@ index=wls* EventID=4688 (BaseFileName=powershell.exe OR BaseFileName=powershell_
 Event Codes 4103 & 4104 - Module Logging & Script Block Logging
 {{{
 index=wls* ProviderName="Microsoft-Windows-PowerShell"
-(Copy-Item OR .CopyHere OR New-Object OR WebClient ORDownloadFile OR downloadstring OR WebRequest OR restmethod)
+(Copy-Item OR .CopyHere OR New-Object OR WebClient OR DownloadFile OR downloadstring OR WebRequest OR restmethod)
 ( EventID=4103
  (Payload="*Copy-Item*" OR 
   Payload="*.CopyHere*" OR 
