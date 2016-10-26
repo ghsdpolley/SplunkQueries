@@ -36,14 +36,19 @@ Event Code 4688 - Process Execution
 {{{
 index=wls* EventID=4688 (BaseFileName=powershell.exe OR BaseFileName=powershell_ise.exe OR BaseFileName=cmd.exe)
 (Copy-Item OR .CopyHere OR New-Object OR WebClient OR DownloadFile OR downloadstring OR WebRequest OR restmethod)
-(CommandLine="*Copy-Item*" OR 
- CommandLine="*.CopyHere*" OR 
- CommandLine="*New-Object*" OR 
+(CommandLine="*Copy-Item*" OR
+ CommandLine="*CopyHere*" OR
+ CommandLine="*New-Object*" OR
  CommandLine="*WebClient*" OR
- CommandLine="*DownloadFile*" OR 
- CommandLine="*downloadstring*" OR 
+ CommandLine="*DownloadFile*" OR
+ CommandLine="*downloadstring*" OR
  CommandLine="*WebRequest*" OR
- CommandLine="*restmethod*")
+ CommandLine="*restmethod*" OR
+ CommandLine="*iex*(*iwr*" OR
+ CommandLine="*comobject*InternetExplorer*" OR
+ CommandLine="*Msxml2.XMLHTTP*" OR
+ CommandLine="*WinHttp*" OR
+ CommandLine="*bitstransfer*")
 | table _time, Computer, SubjectDomainName, SubjectUserName, BaseFileName, CommandLine, CompanyName, CreatorProcessName, NewProcessName, FileDescription, FileVersion, MD5
 }}}
 
@@ -52,22 +57,34 @@ Event Codes 4103 & 4104 - Module Logging & Script Block Logging
 index=wls* ProviderName="Microsoft-Windows-PowerShell"
 (Copy-Item OR .CopyHere OR New-Object OR WebClient OR DownloadFile OR downloadstring OR WebRequest OR restmethod)
 ( EventID=4103
- (Payload="*Copy-Item*" OR 
-  Payload="*.CopyHere*" OR 
-  Payload="*New-Object*" OR 
+ (Payload="*Copy-Item*" OR
+  Payload="*CopyHere*" OR
+  Payload="*New-Object*" OR
   Payload="*WebClient*" OR
-  Payload="*DownloadFile*" OR 
+  Payload="*DownloadFile*" OR
+  Payload="*downloadstring*" OR
   Payload="*WebRequest*" OR
-  Payload="*restmethod*")
+  Payload="*restmethod*" OR
+  Payload="*iex*(*iwr*" OR
+  Payload="*comobject*InternetExplorer*" OR
+  Payload="*Msxml2.XMLHTTP*" OR
+  Payload="*WinHttp*" OR
+  Payload="*bitstransfer*")
 ) OR 
 ( EventID=4104
- (ScriptBlockText="*Copy-Item*" OR 
-  ScriptBlockText="*.CopyHere*" OR 
-  ScriptBlockText="*New-Object*" OR 
+ (ScriptBlockText="*Copy-Item*" OR
+  ScriptBlockText="*CopyHere*" OR
+  ScriptBlockText="*New-Object*" OR
   ScriptBlockText="*WebClient*" OR
-  ScriptBlockText="*DownloadFile*" OR 
+  ScriptBlockText="*DownloadFile*" OR
+  ScriptBlockText="*downloadstring*" OR
   ScriptBlockText="*WebRequest*" OR
-  ScriptBlockText="*restmethod*")
+  ScriptBlockText="*restmethod*" OR
+  ScriptBlockText="*iex*(*iwr*" OR
+  ScriptBlockText="*comobject*InternetExplorer*" OR
+  ScriptBlockText="*Msxml2.XMLHTTP*" OR
+  ScriptBlockText="*WinHttp*" OR
+  ScriptBlockText="*bitstransfer*")
 )
 }}}
 
