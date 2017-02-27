@@ -1,0 +1,11 @@
+<nav search_view="search" color="#59bdff">
+  <collection label="Search Items"/>
+    <view name="search" default="true" />
+    <view name="datasets" />
+    <view name="reports" />
+    <view name="alerts" />
+    <view name="dashboards" />
+  </collection>
+  <collection label="Powershell Reports"/>
+  </collection>
+</nav>
