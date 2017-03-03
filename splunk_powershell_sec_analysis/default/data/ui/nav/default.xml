@@ -1,0 +1,30 @@
+<nav search_view="search" color="#59bdff">
+  <collection label="Search">
+    <view name="search" default="true"/>
+    <view name="datasets" />
+    <view name="reports" />
+    <view name="alerts" />
+    <view name="dashboards" />
+  </collection>
+  <collection label="Powershell Download / Copy Reports" >
+    <saved source="all" match="Powershell - Download" />
+  </collection>
+  <collection label="Powershell Injection Reports">
+    <saved source="all" match="Powershell - Injection" />
+  </collection>
+  <collection label="Powershell Enumeration Reports">
+    <saved source="all" match="Powershell - Enumeration" />
+  </collection>
+  <collection label="Powershell Powersploit Reports">
+    <saved source="all" match="Powershell - Powersploit" />
+  </collection>
+  <collection label="Powershell Get-Service Reports">
+    <saved source="all" match="Powershell - Get-Service" />
+  </collection>
+  <collection label="Powershell Scheduled Tasks">
+    <saved source="all" match="Powershell - Scheduled" />
+  </collection>
+  <collection label="Powershell Remote Reports">
+    <saved source="all" match="Powershell - Remote" />
+  </collection>
+</nav>
