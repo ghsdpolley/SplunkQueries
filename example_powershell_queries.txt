@@ -1,0 +1,28 @@
+4103 - Module logging
+
+[timeframe] index=wls* host="[hostname here]" EventID=4103
+    NOT (
+     Application="*filter out your noisy stuff here*"
+    ) 
+| rex field=ContextInfo "-((?i)enc|encodedcommand|encode|en)\s\'?(?<base64_command>.*);\s+Eng" 
+| decrypt field=base64_command atob() emit('base64_decoded_command') 
+| eval base64_decoded_command=replace(base64_decoded_command, "\.\.\.", ",") 
+| eval base64_decoded_command=replace(base64_decoded_command, "\.", "") 
+| eval base64_decoded_command=replace(base64_decoded_command, ",", ".") 
+| table _time, host, EventID, User, Application, Name, ContextInfo, base64_decoded_command
+| sort 0 -_time
+
+----
+
+4104 - Script Block Logging
+
+[timeframe] index=wls* host="[hostname here]" EventID=4104
+NOT (
+ Path="*filter out your noisy stuff here*" OR
+ ScriptBlockText="*filter out your noisy stuff here*"
+)
+| transaction ScriptBlockId 
+| table _time, host, SecurityUserName, EventID, Path, ScriptBlockId, ScriptBlockText
+| sort 0 _time
+Please note that we need to transact on the ScriptBlockId to keep ScriptBlockText values intact
+
